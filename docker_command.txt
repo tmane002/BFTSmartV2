@@ -1,0 +1,2 @@
+sudo docker run -v /home/tejas/dev/library:/root --name s4 -it ubuntu /bin/bash
+./runscripts/smartrun.sh bftsmart.demo.counter.CounterServer 0

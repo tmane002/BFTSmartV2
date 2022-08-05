@@ -25,6 +25,7 @@ import bftsmart.communication.client.CommunicationSystemServerSideFactory;
 import bftsmart.communication.client.RequestReceiver;
 import bftsmart.communication.server.ServersCommunicationLayer;
 import bftsmart.consensus.roles.Acceptor;
+import bftsmart.demo.counter.ClusterInfo;
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.tom.ServiceReplica;
 import bftsmart.tom.core.TOMLayer;
@@ -50,6 +51,9 @@ public class ServerCommunicationSystem extends Thread {
     private CommunicationSystemServerSide clientsConn;
     private ServerViewController controller;
 
+    private int latency;
+    private ClusterInfo cinfo;
+
     /**
      * Creates a new instance of ServerCommunicationSystem
      */
@@ -68,6 +72,41 @@ public class ServerCommunicationSystem extends Thread {
             clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
         //******* EDUARDO END **************//
     }
+
+
+
+    public ServerCommunicationSystem(ServerViewController controller, ServiceReplica replica, int id) throws Exception {
+        super("Server Comm. System");
+
+        this.cinfo = new ClusterInfo();
+        this.latency = this.cinfo.NodeToLatency.get(id);
+
+        this.controller = controller;
+
+        messageHandler = new MessageHandler();
+
+        inQueue = new LinkedBlockingQueue<SystemMessage>(controller.getStaticConf().getInQueueSize());
+
+        serversConn = new ServersCommunicationLayer(controller, inQueue, replica);
+
+        //******* EDUARDO BEGIN **************//
+        clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
+        //******* EDUARDO END **************//
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     //******* EDUARDO BEGIN **************//
     public void joinViewReceived() {
@@ -115,6 +154,11 @@ public class ServerCommunicationSystem extends Thread {
 
                 if (sm != null) {
                     logger.debug("<-- receiving, msg:" + sm);
+
+//                    System.out.wait(this.latency);
+                    TimeUnit.MICROSECONDS.sleep(this.latency);
+
+
                     messageHandler.processData(sm);
                     count++;
                 } else {                

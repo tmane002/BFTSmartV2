@@ -181,6 +181,12 @@ public class ServiceProxy extends TOMSender {
 		return invoke(request, TOMMessageType.ORDERED_REQUEST);
 	}
 
+	public void invokeOrderedNoReply(byte[] request) {
+		invokeNoReply(request, TOMMessageType.ORDERED_REQUEST);
+	}
+
+
+
         /**
          * This method sends an unordered request to the replicas, and returns the related reply.
 	 * If the servers take more than invokeTimeout seconds the method returns null.
@@ -350,6 +356,72 @@ public class ServiceProxy extends TOMSender {
                 if (canSendLock.isHeldByCurrentThread()) canSendLock.unlock(); //always release lock
             }
 	}
+
+
+
+	public void invokeNoReply(byte[] request, TOMMessageType reqType) {
+
+		try {
+
+			canSendLock.lock();
+
+			// Clean all statefull data to prepare for receiving next replies
+			Arrays.fill(replies, null);
+			receivedReplies = 0;
+			response = null;
+			replyQuorum = getReplyQuorum();
+
+			// Send the request to the replicas, and get its ID
+			reqId = generateRequestId(reqType);
+			operationId = generateOperationId();
+			requestType = reqType;
+
+			replyServer = -1;
+			hashResponseController = null;
+
+			if(requestType == TOMMessageType.UNORDERED_HASHED_REQUEST){
+
+				replyServer = getRandomlyServerId();
+				logger.debug("["+this.getClass().getName()+"] replyServerId("+replyServer+") "
+						+ "pos("+getViewManager().getCurrentViewPos(replyServer)+")");
+
+				hashResponseController = new HashResponseController(getViewManager().getCurrentViewPos(replyServer),
+						getViewManager().getCurrentViewProcesses().length);
+
+				TOMMessage sm = new TOMMessage(getProcessId(),getSession(), reqId, operationId, request,
+						getViewManager().getCurrentViewId(), requestType);
+				sm.setReplyServer(replyServer);
+
+				TOMulticast(sm);
+			}else{
+				TOMulticast(request, reqId, operationId, reqType);
+			}
+
+			logger.debug("Sending request (" + reqType + ") with reqId=" + reqId);
+			logger.debug("Expected number of matching replies: " + replyQuorum);
+
+			// This instruction blocks the thread, until a response is obtained.
+			// The thread will be unblocked when the method replyReceived is invoked
+			// by the client side communication system
+
+		} finally {
+
+			if (canSendLock.isHeldByCurrentThread()) canSendLock.unlock(); //always release lock
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	//******* EDUARDO BEGIN **************//
 	protected void reconfigureTo(View v) {

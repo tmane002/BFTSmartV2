@@ -24,7 +24,7 @@ import bftsmart.tom.util.KeyLoader;
 public class VMServices {
     
     private KeyLoader keyLoader;
-    private String configDir;
+    private String configDir= "config0";
     
     /**
      * Constructor. It adopts the default RSA key loader and default configuration path.
@@ -32,8 +32,9 @@ public class VMServices {
     public VMServices() { // for the default keyloader and provider
         
         keyLoader = null;
-        configDir = "";
+        configDir = "config0";
     }
+
     
     /**
      * Constructor.
@@ -78,6 +79,16 @@ public class VMServices {
         execute(viewManager);
 
     }
+
+    public void updateClusters() {
+
+        ViewManager viewManager = new ViewManager(keyLoader);
+
+        execute(viewManager);
+
+    }
+
+
     
     private void execute(ViewManager viewManager) {
         

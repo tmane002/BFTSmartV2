@@ -1,18 +1,15 @@
 /**
-Copyright (c) 2007-2013 Alysson Bessani, Eduardo Alchieri, Paulo Sousa, and the authors indicated in the @author tags
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
+ Copyright (c) 2007-2013 Alysson Bessani, Eduardo Alchieri, Paulo Sousa, and the authors indicated in the @author tags
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ */
 package bftsmart.demo.counter;
 
 import bftsmart.tom.MessageContext;
@@ -32,32 +29,29 @@ import java.io.ObjectOutputStream;
  * Example replica that implements a BFT replicated service (a counter).
  * If the increment > 0 the counter is incremented, otherwise, the counter
  * value is read.
- * 
+ *
  * @author alysson
  */
 
 public final class CounterServer extends DefaultSingleRecoverable  {
-    
+
     private int counter = 0;
     private int iterations = 0;
 
     private int clusterNumber = 0;
-    public CounterServer(int id, int clusterNumber)
-    {
-        this.clusterNumber = clusterNumber;
 
-        if (clusterNumber<1)
-        {
-            new ServiceReplica(id, this, this, "config1");
-        }
-        else {
-            new ServiceReplica(id, this, this, "config2");
-        }
+    public CounterServer(int id, int clusterNumber, ClusterInfo cinfo)
+    {
+        System.out.println("id + clusterNumber + cinfo = "+id +", "+ clusterNumber +", "+ cinfo);
+        this.clusterNumber = clusterNumber;
+        System.out.println("cinfo.clusterFolderMap.get(this.clusterNumber) is "+cinfo.clusterNumberToFolderMap.get(this.clusterNumber));
+
+        new ServiceReplica(id, this, this, cinfo.clusterNumberToFolderMap.get(this.clusterNumber));
 
     }
-            
+
     @Override
-    public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {         
+    public byte[] appExecuteUnordered(byte[] command, MessageContext msgCtx) {
         iterations++;
         System.out.println("(" + iterations + ") Counter current value: " + counter);
         try {
@@ -69,16 +63,16 @@ public final class CounterServer extends DefaultSingleRecoverable  {
             return new byte[0];
         }
     }
-  
+
     @Override
     public byte[] appExecuteOrdered(byte[] command, MessageContext msgCtx) {
         iterations++;
         try {
             int increment = new DataInputStream(new ByteArrayInputStream(command)).readInt();
             counter += increment;
-            
+
             System.out.println("(" + iterations + ") Counter was incremented. Current value = " + counter);
-            
+
             ByteArrayOutputStream out = new ByteArrayOutputStream(4);
             new DataOutputStream(out).writeInt(counter);
             return out.toByteArray();
@@ -92,11 +86,19 @@ public final class CounterServer extends DefaultSingleRecoverable  {
         if(args.length < 1) {
             System.out.println("Use: java CounterServer <processId> <clusterNumber>");
             System.exit(-1);
-        }      
-        new CounterServer(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+        }
+        ClusterInfo cinfo = new ClusterInfo();
+
+
+        System.out.println("Integer.parseInt(args[0]) is "+ Integer.parseInt(args[0]));
+        System.out.println("cinfo.ServerNoToIntraClusterNumber.get(Integer.parseInt(args[0])) is "+
+                cinfo.ServerNoToIntraClusterNumber.get(Integer.parseInt(args[0])));
+
+        new CounterServer(cinfo.ServerNoToIntraClusterNumber.get(Integer.parseInt(args[0])), cinfo.clusterMap.get(Integer.parseInt(args[0])),
+                cinfo);
     }
 
-    
+
     @SuppressWarnings("unchecked")
     @Override
     public void installSnapshot(byte[] state) {

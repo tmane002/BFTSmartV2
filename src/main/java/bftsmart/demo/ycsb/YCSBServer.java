@@ -23,8 +23,12 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.util.TreeMap;
+import java.util.concurrent.*;
 
+import bftsmart.benchmark.ThroughputLatencyClient;
+import bftsmart.demo.counter.ClusterInfo;
 import bftsmart.tom.MessageContext;
+import bftsmart.tom.ServiceProxy;
 import bftsmart.tom.ServiceReplica;
 import bftsmart.tom.server.defaultservices.DefaultRecoverable;
 
@@ -40,6 +44,19 @@ public class YCSBServer extends DefaultRecoverable {
 
     private boolean logPrinted = false;
 
+    private int sid;
+
+//    private ServiceProxy[] ServiceTaskArr;
+////    private Task[] ServiceTaskArr;
+//
+    private ClusterInfo cinfo;
+
+    private ThreadPoolExecutor executor;
+
+    private Task[] tempTasks;
+
+    private CountDownLatch latch;
+
     public static void main(String[] args) throws Exception {
         if (args.length == 1) {
             new YCSBServer(Integer.parseInt(args[0]));
@@ -49,14 +66,43 @@ public class YCSBServer extends DefaultRecoverable {
     }
 
     private YCSBServer(int id) {
+
+        this.cinfo = new ClusterInfo();
+
+        this.sid = id;
         this.mTables = new TreeMap<>();
-        new ServiceReplica(id, this, this);
+        System.out.println("cinfo.clusterFolderMap.get(this.clusterNumber) is "+
+                cinfo.clusterNumberToFolderMap.get(id) + ", "+id);
+
+//        this.ServiceTaskArr = new ServiceProxy[cinfo.nClusters];
+////        this.ServiceTaskArr = new Task[cinfo.nClusters];
+//
+//        for (int i=0; i < this.cinfo.nClusters;i++)
+//        {
+//
+//            if (i!=this.cinfo.clusterMap.get(this.sid) )
+//            {
+//                this.ServiceTaskArr[i] = new ServiceProxy(this.sid, "config"+Integer.toString(i));
+//            }
+//        }
+
+
+
+
+
+
+
+        new ServiceReplica(cinfo.ServerNoToIntraClusterNumber.get(id), this, this,
+                cinfo.clusterNumberToFolderMap.get(id));
     }
 
     @Override
     public byte[][] appExecuteBatch(byte[][] commands, MessageContext[] msgCtx, boolean fromConsensus) {
         byte[][] replies = new byte[commands.length][];
         int index = 0;
+
+
+
         for (byte[] command : commands) {
             if (msgCtx != null && msgCtx[index] != null && msgCtx[index].getConsensusId() % 1000 == 0 && !logPrinted) {
                 System.out.println("YCSBServer executing CID: " + msgCtx[index].getConsensusId());
@@ -110,9 +156,94 @@ public class YCSBServer extends DefaultRecoverable {
             if (_debug) {
                 System.out.println("[INFO] Sending reply");
             }
+
+
+
+//            this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+//
+//            for (int i=0; i < this.cinfo.nClusters;i++)
+//            {
+//
+//                if (i!=this.cinfo.clusterMap.get(this.sid) && this.sid==msgCtx[index].getLeader())
+//                {
+//                    System.out.println("i, this.sid, this.cinfo.clusterMap.get(this.sid), msgCtx[index].getLeader()"+
+//                            i+ ", " +this.sid + ", " + this.cinfo.clusterMap.get(this.sid) + ", "+ msgCtx[index].getLeader());
+//                    this.ServiceTaskArr[i] = new Task(this.sid, "config"+Integer.toString(i));
+//
+//                    this.ServiceTaskArr[i].setMsg(aRequest);
+//                    this.executor.execute(this.ServiceTaskArr[i]);
+//                }
+//            }
+
+//            if (this.cinfo.nClusters > 1)
+//            {
+//
+//                this.tempTasks = new Task[this.cinfo.nClusters];
+//                this.latch = new CountDownLatch(this.cinfo.nClusters-1);
+//                for (int i=0; i < this.cinfo.nClusters;i++)
+//                {
+//
+//                    if (this.cinfo.clusterMap.get(this.sid)==0 && this.sid==msgCtx[index].getLeader())
+//                    {
+//
+//                        this.tempTasks[i] = new Task(this.sid, "config"+Integer.toString(i), latch);
+//                        this.tempTasks[i].setMsg(aRequest);
+//
+//                        this.tempTasks[i].start();
+//
+//                    }
+//                }
+//
+//                new Thread(() -> {
+//                    try {
+//                        latch.await();
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }).start();
+//            }
+
+
+
+
+//            for (int i=0; i < this.cinfo.nClusters;i++)
+//            {
+//                if (i!=this.cinfo.clusterMap.get(this.sid) && this.sid==msgCtx[index].getLeader())
+//                {
+//                    this.ServiceTaskArr[i].invokeOrderedNoReply(aRequest.getBytes());
+//                }
+//            }
+
+
+
+
+//            this.executor.shutdown();
+//            try {
+//                this.executor.awaitTermination(1000, TimeUnit.SECONDS);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+
+
+
+
+
             replies[index++] = reply.getBytes();
+
+
+            //  send message to all other servers here
+
+
+
+
+
+
         }
 //		System.out.println("RETURNING REPLY");
+
+
+
+
         return replies;
     }
 

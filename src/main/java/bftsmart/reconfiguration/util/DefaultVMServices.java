@@ -15,6 +15,8 @@ public class DefaultVMServices extends VMServices {
     
     public static void main(String[] args) throws InterruptedException {
 
+        System.out.println("args.length is "+args.length);
+
         if(args.length == 1){
             System.out.println("####Tpp Service[Disjoint]####");
 
@@ -23,7 +25,7 @@ public class DefaultVMServices extends VMServices {
             (new DefaultVMServices()).removeServer(smartId);
             
                 
-        }else if(args.length == 3){
+        }else if(args.length == 4){
             System.out.println("####Tpp Service[Join]####");
 
             int smartId = Integer.parseInt(args[0]);

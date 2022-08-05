@@ -77,6 +77,7 @@ public abstract class DefaultRecoverable implements Recoverable, BatchExecutable
 
     private byte[][] executeBatch(byte[][] commands, MessageContext[] msgCtxs, boolean noop) {
 
+
         int cid = msgCtxs[msgCtxs.length-1].getConsensusId();
 
         // As the delivery thread may deliver several consensus at once it is necessary

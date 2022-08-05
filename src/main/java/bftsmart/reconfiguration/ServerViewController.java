@@ -90,6 +90,10 @@ public class ServerViewController extends ViewController {
         this.tomLayer = tomLayer;
     }
 
+    public TOMLayer getTomLayer(TOMLayer tomLayer) {
+        return this.tomLayer;
+    }
+
     
     public boolean isInCurrentView() {
         return this.currentView.isMember(getStaticConf().getProcessId());
@@ -176,7 +180,7 @@ public class ServerViewController extends ViewController {
         int[] nextV = new int[currentView.getN() + jSet.size() - rSet.size()];
         int p = 0;
         
-        boolean forceLC = false;
+        boolean forceLC = true;
         for (int i = 0; i < jSet.size(); i++) {
             lastJoinStet[i] = jSet.get(i);
             nextV[p++] = jSet.get(i);

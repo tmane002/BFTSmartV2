@@ -33,7 +33,8 @@ public class DefaultReplier implements Replier{
     private Lock replyLock = new ReentrantLock();
     private Condition contextSetted = replyLock.newCondition();
     private ReplicaContext rc;
-    
+
+    private int latency;
     @Override
     public void manageReply(TOMMessage request, MessageContext msgCtx) {
         

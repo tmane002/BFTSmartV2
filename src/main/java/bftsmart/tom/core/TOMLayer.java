@@ -24,8 +24,10 @@ import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Decision;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.roles.Acceptor;
+import bftsmart.demo.counter.ClusterInfo;
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.statemanagement.StateManager;
+import bftsmart.tom.ServiceProxy;
 import bftsmart.tom.ServiceReplica;
 import bftsmart.tom.core.messages.ForwardedMessage;
 import bftsmart.tom.core.messages.TOMMessage;
@@ -111,6 +113,13 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 
     private final Synchronizer syncher;
 
+
+
+
+    private ClusterInfo cinfo;
+    private String configHome;
+    private int id;
+    private int ClusterNumber;
     /**
      * Creates a new instance of TOMulticastLayer
      *
@@ -176,10 +185,29 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 
         RequestVerifier verifier1 = (verifier != null) ? verifier : ((request) -> true); // By default, never validate requests
 
+
+        this.cinfo = new ClusterInfo();
+
+
+
+
+
+
+        this.id = receiver.getId();
+        this.configHome = receiver.getConfig();
+        this.ClusterNumber = Integer.parseInt(this.configHome.replaceAll("[^0-9]", ""));
+
+
+
         // I have a verifier, now create clients manager
-        this.clientsManager = new ClientsManager(this.controller, requestsTimer, verifier1);
+        this.clientsManager = new ClientsManager(this.controller, requestsTimer, verifier1, receiver.getId(), this.ClusterNumber, execManager);
 
         this.syncher = new Synchronizer(this); // create synchronizer
+
+
+
+
+
 
         if (controller.getStaticConf().getBatchTimeout() > -1) {
 
@@ -323,17 +351,17 @@ public final class TOMLayer extends Thread implements RequestReceiver {
         if (!doWork) return;
 
         switch(msg.getReqType()) {
-		case ASK_STATUS:
-		case REPLY:
-		case STATUS_REPLY:
-			// These kind of messages should never enter the replica
-			return;
-		case RECONFIG:
-		case ORDERED_REQUEST:
-		case UNORDERED_HASHED_REQUEST:
-		case UNORDERED_REQUEST:
-			// These messages should be processed
-			break;
+            case ASK_STATUS:
+            case REPLY:
+            case STATUS_REPLY:
+                // These kind of messages should never enter the replica
+                return;
+            case RECONFIG:
+            case ORDERED_REQUEST:
+            case UNORDERED_HASHED_REQUEST:
+            case UNORDERED_REQUEST:
+                // These messages should be processed
+                break;
         }
 
 
@@ -349,11 +377,20 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 
             if (clientsManager.requestReceived(msg, fromClient, communication)) {
 
+
+
+
+
                 if(controller.getStaticConf().getBatchTimeout() == -1) {
                     haveMessages();
                 } else {
 
                     if (!clientsManager.isNextBatchReady()) {
+
+
+
+
+
 
                         lastRequest = System.currentTimeMillis();
 

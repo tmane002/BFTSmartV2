@@ -18,10 +18,12 @@ package bftsmart.tom;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import bftsmart.communication.ServerCommunicationSystem;
+import bftsmart.demo.counter.ClusterInfo;
 import bftsmart.tom.core.ExecutionManager;
 import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.consensus.roles.Acceptor;
@@ -79,6 +81,10 @@ public class ServiceReplica {
     private Replier replier = null;
     private RequestVerifier verifier = null;
 
+    private ClusterInfo cinfo;
+    private int ServerNumber = -1;
+    private String configHome;
+
     /**
      * Constructor
      *
@@ -93,8 +99,15 @@ public class ServiceReplica {
 
 
     public ServiceReplica(int id, Executable executor, Recoverable recoverer, String configHome) {
+
         this(id, configHome, executor, recoverer, null, new DefaultReplier(), null);
     }
+
+    public ServiceReplica(int id, Executable executor, Recoverable recoverer, String configHome, int ServerNumber) {
+
+        this(id, configHome, executor, recoverer, null, new DefaultReplier(), null);
+    }
+
 
     /**
      * Constructor
@@ -138,6 +151,10 @@ public class ServiceReplica {
      */
     public ServiceReplica(int id, String configHome, Executable executor, Recoverable recoverer, RequestVerifier verifier, Replier replier, KeyLoader loader) {
         this.id = id;
+        this.cinfo = new ClusterInfo();
+
+        this.configHome = configHome;
+
         this.SVController = new ServerViewController(id, configHome, loader);
         this.executor = executor;
         this.recoverer = recoverer;
@@ -286,6 +303,17 @@ public class ServiceReplica {
             for (TOMMessage request : requestsFromConsensus) {
                 
                 logger.debug("Processing TOMMessage from client " + request.getSender() + " with sequence number " + request.getSequence() + " for session " + request.getSession() + " decided in consensus " + consId[consensusCount]);
+
+//                try {
+//                    System.out.wait(this.cinfo.NodeToLatency.get(this.id));
+//                } catch (InterruptedException e) {
+//                    throw new RuntimeException(e);
+//                }
+                try {
+                    TimeUnit.MICROSECONDS.sleep(this.cinfo.NodeToLatency.get(this.id));
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
 
                 if (request.getViewID() == SVController.getCurrentViewId()) {
 
@@ -514,5 +542,9 @@ public class ServiceReplica {
      */
     public int getId() {
         return id;
+    }
+
+    public String getConfig() {
+        return this.configHome;
     }
 }
